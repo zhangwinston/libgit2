@@ -47,13 +47,22 @@ if(MSVC)
 	# /Oy - Enable frame pointer omission (FPO) (otherwise CMake will automatically turn it off)
 	# /GL - Link time code generation (whole program optimization)
 	# /Gy - Function-level linking
-	set(CMAKE_C_FLAGS_RELEASE "/DNDEBUG /O2 /Oy /GL /Gy ${CRT_FLAG_RELEASE}")
+	#
+	# lld-link cannot consume MSVC /GL (LTCG) objects: it rejects them with
+	# "is not a native COFF file". Only emit LTCG objects when the project
+	# actually links with link.exe; lld-link builds get plain /O2 objects.
+	if(CMAKE_LINKER MATCHES "lld-link")
+		set(GL_FLAG "")
+	else()
+		set(GL_FLAG "/GL")
+	endif()
+	set(CMAKE_C_FLAGS_RELEASE "/DNDEBUG /O2 /Oy ${GL_FLAG} /Gy ${CRT_FLAG_RELEASE}")
 
 	# /Oy- - Disable frame pointer omission (FPO)
-	set(CMAKE_C_FLAGS_RELWITHDEBINFO "/DNDEBUG /Zi /O2 /Oy- /GL /Gy ${CRT_FLAG_RELEASE}")
+	set(CMAKE_C_FLAGS_RELWITHDEBINFO "/DNDEBUG /Zi /O2 /Oy- ${GL_FLAG} /Gy ${CRT_FLAG_RELEASE}")
 
 	# /O1 - Optimize for size
-	set(CMAKE_C_FLAGS_MINSIZEREL "/DNDEBUG /O1 /Oy /GL /Gy ${CRT_FLAG_RELEASE}")
+	set(CMAKE_C_FLAGS_MINSIZEREL "/DNDEBUG /O1 /Oy ${GL_FLAG} /Gy ${CRT_FLAG_RELEASE}")
 
 	# /IGNORE:4221 - Ignore empty compilation units
 	set(CMAKE_STATIC_LINKER_FLAGS "/IGNORE:4221")
